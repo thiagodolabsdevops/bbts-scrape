@@ -4,7 +4,7 @@ import csv
 import os
 
 # URL for scraping with pagination support
-base_url = "https://www.bigbadtoystore.com/Search?HideInStock=false&HidePreorder=false&HideSoldOut=false&InventoryStatus=i,p,so&PageSize=100&SortOrder=Relevance&SearchText=marvel%20legends&o={}"
+base_url = "https://www.bigbadtoystore.com/Search?SearchText=marvel%20legends&o={}"
 
 def scrape_page(page_number):
     """Scrape a single page of Marvel Legends products."""
@@ -18,7 +18,7 @@ def scrape_page(page_number):
     soup = BeautifulSoup(response.text, 'html.parser')
     
     # Check for any product elements
-    product_elements = soup.find_all("div", class_="search-result-contents")
+    product_elements = soup.find_all("div", class_="product-container")
     if not product_elements:
         print(f"No products found on page {page_number}")
         return []
@@ -26,14 +26,12 @@ def scrape_page(page_number):
     products = []
     for item in product_elements:
         try:
-            name = item.find("span", class_="product-name").text.strip()
-            company = item.find("span", class_="search-product-companies").text.strip()
-            price_integer = item.find("span", class_="search-price-integer").text.strip()
-            price_decimal = item.find("span", class_="search-price-decimal").text.strip()
-            price = f"${price_integer}.{price_decimal}"
-            status = item.find("div", class_="search-in-stock-box").text.strip() if item.find("div", class_="search-in-stock-box") else "Unavailable"
-            sale_info = item.find("div", class_="search-on-sale-box").text.strip() if item.find("div", class_="search-on-sale-box") else "No sale"
-            discount = item.find("span", class_="search-discount-pct").text.strip() if item.find("span", class_="search-discount-pct") else "No discount"
+            name = item.find("h4", class_="product-name").text.strip()
+            company = item.find("div", class_="product-brand").text.strip()
+            price = item.find("span", class_="product-price").text.strip()
+            status = item.find("div", class_="product-availability").text.strip()
+            sale_info = item.find("div", class_="product-savings").text.strip() if item.find("div", class_="product-savings") else "No sale"
+            discount = item.find("span", class_="product-savings-percent").text.strip() if item.find("span", class_="product-savings-percent") else "No discount"
 
             products.append({
                 "Name": name,
@@ -44,8 +42,8 @@ def scrape_page(page_number):
                 "Discount": discount
             })
 
-        except AttributeError:
-            # Skip products with missing information
+        except AttributeError as e:
+            print(f"Error processing product: {e}")
             continue
 
     return products

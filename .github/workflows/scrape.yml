@@ -2,7 +2,7 @@ name: Schedule Python Script and Commit Output
 
 on:
   schedule:
-    - cron: "0 0 * * 1"
+    - cron: "0 0 * * 1" # Runs at 00:00 every Monday
   workflow_dispatch:  # Allows manual triggering of the workflow
 
 jobs:
@@ -24,7 +24,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Run Python script
-      run: python script.py  # Adjust to your script name
+      run: python script.py
 
     - name: Check if there are changes
       run: |
