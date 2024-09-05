@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import csv
+import os
 
 # URL for scraping with pagination support
 base_url = "https://www.bigbadtoystore.com/Search?HideInStock=false&HidePreorder=false&HideSoldOut=false&InventoryStatus=i,p,so&PageSize=100&SortOrder=Relevance&SearchText=marvel%20legends&o={}"
@@ -9,11 +10,21 @@ def scrape_page(page_number):
     """Scrape a single page of Marvel Legends products."""
     url = base_url.format(page_number * 100)
     response = requests.get(url)
+    
+    if response.status_code != 200:
+        print(f"Failed to retrieve page {page_number}, status code: {response.status_code}")
+        return []
+    
     soup = BeautifulSoup(response.text, 'html.parser')
-
+    
+    # Check for any product elements
+    product_elements = soup.find_all("div", class_="search-result-contents")
+    if not product_elements:
+        print(f"No products found on page {page_number}")
+        return []
+    
     products = []
-
-    for item in soup.find_all("div", class_="search-result-contents"):
+    for item in product_elements:
         try:
             name = item.find("span", class_="product-name").text.strip()
             company = item.find("span", class_="search-product-companies").text.strip()
@@ -53,17 +64,30 @@ def scrape_all_pages(max_pages=5):
 
 def save_to_csv(products, filename='outputs.csv'):
     """Save the scraped product data to a CSV file."""
-    keys = products[0].keys()
-    with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+    keys = ["Name", "Company", "Price", "Status", "Sale Info", "Discount"]
+    file_exists = os.path.isfile(filename)
+    
+    with open(filename, 'a', newline='', encoding='utf-8') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=keys)
-        writer.writeheader()
+        if not file_exists:
+            writer.writeheader()
         writer.writerows(products)
 
 if __name__ == "__main__":
     print("Starting to scrape Marvel Legends...")
     products = scrape_all_pages()
-    if products:
+
+    if not os.path.exists('outputs.csv'):
+        # Ensure the file is created on the first run even if no products are found
         save_to_csv(products)
-        print(f"Scraped {len(products)} products and saved to outputs.csv")
+        if products:
+            print(f"Scraped {len(products)} products and saved to outputs.csv")
+        else:
+            print("No products found. Created outputs.csv with headers.")
     else:
-        print("No products found.")
+        if products:
+            save_to_csv(products)
+            print(f"Found {len(products)} new products. Updated outputs.csv.")
+        else:
+            print("No new products found. Skipping commit.")
+            exit(0)  # Gracefully end the workflow

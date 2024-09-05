@@ -1,10 +1,9 @@
 name: Schedule Python Script and Commit Output
 
 on:
-  workflow_dispatch:  
   schedule:
-    # Runs at 00:00 every Monday
     - cron: "0 0 * * 1"
+  workflow_dispatch:  # Allows manual triggering of the workflow
 
 jobs:
   run_and_commit:
@@ -25,9 +24,14 @@ jobs:
         pip install -r requirements.txt
 
     - name: Run Python script
+      run: python script.py  # Adjust to your script name
+
+    - name: Check if there are changes
       run: |
-        python script.py  # Adjust this to your script name
-        echo "Python script completed."
+        if git diff --exit-code --quiet outputs.csv; then
+          echo "No changes in outputs.csv, skipping commit."
+          exit 0
+        fi
 
     - name: Commit and push changes
       run: |
