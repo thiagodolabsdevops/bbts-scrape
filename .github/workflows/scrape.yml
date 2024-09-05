@@ -1,6 +1,7 @@
 name: Schedule Python Script and Commit Output
 
 on:
+  workflow_dispatch:  
   schedule:
     # Runs at 00:00 every Monday
     - cron: "0 0 * * 1"
